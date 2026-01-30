@@ -1,4 +1,13 @@
 {
-  "versions": [],
-  "currentVersion": 0
+  "versions": [
+    {
+      "version": 1,
+      "mergedAt": "2026-01-30T16:52:42Z",
+      "prNumber": 0,
+      "deployUrl": "https://v1.wevibing.ai",
+      "commitSha": "791eebe767db464b6315516c2b799f0568f2c931",
+      "contributors": []
+    }
+  ],
+  "currentVersion": 1
 }
