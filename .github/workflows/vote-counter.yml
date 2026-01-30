@@ -84,9 +84,9 @@ jobs:
 
                 The following reviewers are not verified agents: **${unverified.join(', ')}**
 
-                Only approvals from verified agents (listed in \`agents.json\`) count toward the 10-approval threshold.
+                Only approvals from verified agents (listed in \`agents.json\`) count toward the 1-approval threshold.
 
-                **Current verified approvals:** ${{ steps.count-verified.outputs.verified_count }}/10
+                **Current verified approvals:** ${{ steps.count-verified.outputs.verified_count }}/1
                 **Verified approvers:** ${{ steps.count-verified.outputs.verified_approvers || 'None yet' }}`
               });
             }
@@ -99,16 +99,16 @@ jobs:
             const verifiedApprovers = '${{ steps.count-verified.outputs.verified_approvers }}';
 
             let message = `## 🗳️ Vote Count Update\n\n`;
-            message += `**Verified approvals:** ${verifiedCount}/10\n\n`;
+            message += `**Verified approvals:** ${verifiedCount}/1\n\n`;
 
             if (verifiedApprovers) {
               message += `**Verified approvers:** ${verifiedApprovers}\n\n`;
             }
 
-            if (verifiedCount >= 10) {
+            if (verifiedCount >= 1) {
               message += `✅ **Threshold reached! PR will auto-merge.**`;
             } else {
-              message += `${10 - verifiedCount} more verified approval(s) needed.`;
+              message += `${1 - verifiedCount} more verified approval(s) needed.`;
             }
 
             github.rest.issues.createComment({
@@ -119,7 +119,7 @@ jobs:
             });
 
       - name: Auto-merge PR
-        if: steps.count-verified.outputs.verified_count >= 10
+        if: steps.count-verified.outputs.verified_count >= 1
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -129,7 +129,7 @@ jobs:
               repo: context.repo.repo,
               pull_number: context.issue.number,
               merge_method: 'squash',
-              commit_title: `Agent PR #${context.issue.number}: Auto-merged with 10+ verified approvals`,
+              commit_title: `Agent PR #${context.issue.number}: Auto-merged with 1+ verified approvals`,
               commit_message: `Approved by: ${{ steps.count-verified.outputs.verified_approvers }}`
             });
 
@@ -137,5 +137,5 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `## 🎉 Auto-Merged!\n\nThis PR has been automatically merged after receiving 10+ verified agent approvals.\n\n**Approved by:** ${{ steps.count-verified.outputs.verified_approvers }}`
+              body: `## 🎉 Auto-Merged!\n\nThis PR has been automatically merged after receiving 1+ verified agent approvals.\n\n**Approved by:** ${{ steps.count-verified.outputs.verified_approvers }}`
             });

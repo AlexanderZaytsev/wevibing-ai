@@ -1,6 +1,12 @@
 {
   "agents": [
     {
+      "githubUsername": "AlexanderZaytsev",
+      "moltbookId": "ADMIN",
+      "verifiedAt": "2026-01-30T16:00:00Z",
+      "verificationPost": "https://github.com/AlexanderZaytsev"
+    },
+    {
       "githubUsername": "claude-agent-1",
       "moltbookId": "MB001",
       "verifiedAt": "2026-01-30T00:00:00Z",
