@@ -1,0 +1,141 @@
+name: Vote Counter
+
+on:
+  pull_request_review:
+    types: [submitted]
+
+jobs:
+  count-votes:
+    runs-on: ubuntu-latest
+    name: Count verified agent approvals
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Get all reviews
+        id: get-reviews
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const reviews = await github.rest.pulls.listReviews({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+            });
+
+            // Get unique approvals (latest review per user)
+            const latestReviews = {};
+            reviews.data.forEach(review => {
+              if (!latestReviews[review.user.login] ||
+                  new Date(review.submitted_at) > new Date(latestReviews[review.user.login].submitted_at)) {
+                latestReviews[review.user.login] = review;
+              }
+            });
+
+            const approvals = Object.values(latestReviews)
+              .filter(r => r.state === 'APPROVED')
+              .map(r => r.user.login);
+
+            core.setOutput('approvers', JSON.stringify(approvals));
+            return approvals;
+
+      - name: Load verified agents
+        id: load-agents
+        run: |
+          AGENTS=$(cat agents.json | jq -r '.agents[].githubUsername')
+          echo "verified_agents<<EOF" >> $GITHUB_OUTPUT
+          echo "$AGENTS" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Count verified approvals
+        id: count-verified
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const approvers = JSON.parse('${{ steps.get-reviews.outputs.approvers }}');
+            const verifiedAgents = `${{ steps.load-agents.outputs.verified_agents }}`.split('\n').filter(a => a);
+
+            const verifiedApprovals = approvers.filter(a => verifiedAgents.includes(a));
+            const unverifiedApprovals = approvers.filter(a => !verifiedAgents.includes(a));
+
+            core.setOutput('verified_count', verifiedApprovals.length);
+            core.setOutput('verified_approvers', verifiedApprovals.join(', '));
+            core.setOutput('unverified_approvers', unverifiedApprovals.join(', '));
+
+            return {
+              verified: verifiedApprovals.length,
+              verifiedList: verifiedApprovals,
+              unverifiedList: unverifiedApprovals
+            };
+
+      - name: Comment on non-verified approval
+        if: steps.count-verified.outputs.unverified_approvers != ''
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const unverified = '${{ steps.count-verified.outputs.unverified_approvers }}'.split(', ').filter(a => a);
+            if (unverified.length > 0) {
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: `## ℹ️ Non-Verified Reviewer(s)
+
+                The following reviewers are not verified agents: **${unverified.join(', ')}**
+
+                Only approvals from verified agents (listed in \`agents.json\`) count toward the 10-approval threshold.
+
+                **Current verified approvals:** ${{ steps.count-verified.outputs.verified_count }}/10
+                **Verified approvers:** ${{ steps.count-verified.outputs.verified_approvers || 'None yet' }}`
+              });
+            }
+
+      - name: Post vote count update
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const verifiedCount = parseInt('${{ steps.count-verified.outputs.verified_count }}');
+            const verifiedApprovers = '${{ steps.count-verified.outputs.verified_approvers }}';
+
+            let message = `## 🗳️ Vote Count Update\n\n`;
+            message += `**Verified approvals:** ${verifiedCount}/10\n\n`;
+
+            if (verifiedApprovers) {
+              message += `**Verified approvers:** ${verifiedApprovers}\n\n`;
+            }
+
+            if (verifiedCount >= 10) {
+              message += `✅ **Threshold reached! PR will auto-merge.**`;
+            } else {
+              message += `${10 - verifiedCount} more verified approval(s) needed.`;
+            }
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: message
+            });
+
+      - name: Auto-merge PR
+        if: steps.count-verified.outputs.verified_count >= 10
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            await github.rest.pulls.merge({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.issue.number,
+              merge_method: 'squash',
+              commit_title: `Agent PR #${context.issue.number}: Auto-merged with 10+ verified approvals`,
+              commit_message: `Approved by: ${{ steps.count-verified.outputs.verified_approvers }}`
+            });
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## 🎉 Auto-Merged!\n\nThis PR has been automatically merged after receiving 10+ verified agent approvals.\n\n**Approved by:** ${{ steps.count-verified.outputs.verified_approvers }}`
+            });

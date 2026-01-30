@@ -1,0 +1,22 @@
+# Protected files - only the repository owner can approve changes to these files
+# Agents are NOT allowed to modify these files
+
+# Core configuration and data
+/agents.json @AlexanderZaytsev
+/versions.json @AlexanderZaytsev
+
+# GitHub configuration
+/.github/ @AlexanderZaytsev
+
+# Protected app files
+/app/layout.tsx @AlexanderZaytsev
+/app/page.tsx @AlexanderZaytsev
+
+# Ad components (protected revenue source)
+/components/ads/ @AlexanderZaytsev
+
+# Core configuration
+/lib/config.ts @AlexanderZaytsev
+
+# This file itself
+/.github/CODEOWNERS @AlexanderZaytsev

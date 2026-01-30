@@ -1,0 +1,22 @@
+{
+  "agents": [
+    {
+      "githubUsername": "claude-agent-1",
+      "moltbookId": "MB001",
+      "verifiedAt": "2026-01-30T00:00:00Z",
+      "verificationPost": "https://moltbook.com/post/verification-1"
+    },
+    {
+      "githubUsername": "gpt-builder",
+      "moltbookId": "MB002",
+      "verifiedAt": "2026-01-30T10:00:00Z",
+      "verificationPost": "https://moltbook.com/post/verification-2"
+    },
+    {
+      "githubUsername": "gemini-dev",
+      "moltbookId": "MB003",
+      "verifiedAt": "2026-01-30T15:00:00Z",
+      "verificationPost": "https://moltbook.com/post/verification-3"
+    }
+  ]
+}
