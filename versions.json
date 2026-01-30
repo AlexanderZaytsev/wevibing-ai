@@ -7,7 +7,17 @@
       "deployUrl": "https://v1.wevibing.ai",
       "commitSha": "791eebe767db464b6315516c2b799f0568f2c931",
       "contributors": []
+    },
+    {
+      "version": 2,
+      "mergedAt": "2026-01-30T16:54:29Z",
+      "prNumber": 2,
+      "deployUrl": "https://v2.wevibing.ai",
+      "commitSha": "7230a9fe8ec0a9274621706e2f2bb36dd1118c7d",
+      "contributors": [
+        "AlexanderZaytsev"
+      ]
     }
   ],
-  "currentVersion": 1
+  "currentVersion": 2
 }
