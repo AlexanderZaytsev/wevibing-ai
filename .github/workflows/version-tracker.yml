@@ -61,42 +61,12 @@ jobs:
               core.setOutput('contributors', '[]');
             }
 
-      - name: Update versions.json
+      - name: Calculate version number
         id: update-version
         run: |
           # Read current version
           CURRENT_VERSION=$(cat versions.json | jq -r '.currentVersion')
           NEW_VERSION=$((CURRENT_VERSION + 1))
-
-          # Get commit info
-          COMMIT_SHA=$(git rev-parse HEAD)
-          MERGED_AT=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-          PR_NUMBER="${{ steps.get-pr.outputs.pr_number }}"
-          CONTRIBUTORS='${{ steps.get-contributors.outputs.contributors }}'
-
-          if [ -z "$CONTRIBUTORS" ] || [ "$CONTRIBUTORS" = "null" ]; then
-            CONTRIBUTORS='[]'
-          fi
-
-          # Update versions.json
-          jq --arg version "$NEW_VERSION" \
-             --arg mergedAt "$MERGED_AT" \
-             --arg prNumber "$PR_NUMBER" \
-             --arg deployUrl "https://v${NEW_VERSION}.wevibing.ai" \
-             --arg commitSha "$COMMIT_SHA" \
-             --argjson contributors "$CONTRIBUTORS" \
-             '.currentVersion = ($version | tonumber) |
-              .versions += [{
-                version: ($version | tonumber),
-                mergedAt: $mergedAt,
-                prNumber: ($prNumber | tonumber),
-                deployUrl: $deployUrl,
-                commitSha: $commitSha,
-                contributors: $contributors
-              }]' versions.json > versions.json.tmp
-
-          mv versions.json.tmp versions.json
-
           echo "new_version=$NEW_VERSION" >> $GITHUB_OUTPUT
 
       - name: Setup Node.js
@@ -129,29 +99,41 @@ jobs:
 
           echo "deploy_url=https://v${{ steps.update-version.outputs.new_version }}.wevibing.ai" >> $GITHUB_OUTPUT
 
-      - name: Create Cloudflare DNS record
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ZONE_ID: ${{ secrets.CLOUDFLARE_ZONE_ID }}
+      - name: Update versions.json with deployment info
         run: |
-          VERSION="${{ steps.update-version.outputs.new_version }}"
-          SUBDOMAIN="v${VERSION}"
-          # Extract hostname from deployment URL (remove https://)
-          DEPLOYMENT_HOST=$(echo "${{ steps.deploy.outputs.deployment_url }}" | sed 's|https://||')
+          # Get all the info we need
+          NEW_VERSION="${{ steps.update-version.outputs.new_version }}"
+          COMMIT_SHA=$(git rev-parse HEAD)
+          MERGED_AT=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          PR_NUMBER="${{ steps.get-pr.outputs.pr_number }}"
+          CONTRIBUTORS='${{ steps.get-contributors.outputs.contributors }}'
+          DEPLOYMENT_URL="${{ steps.deploy.outputs.deployment_url }}"
+          DEPLOY_URL="https://v${NEW_VERSION}.wevibing.ai"
 
-          # Create CNAME record pointing to Cloudflare Pages deployment
-          curl -X POST "https://api.cloudflare.com/client/v4/zones/${CLOUDFLARE_ZONE_ID}/dns_records" \
-            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}" \
-            -H "Content-Type: application/json" \
-            --data "{
-              \"type\": \"CNAME\",
-              \"name\": \"${SUBDOMAIN}\",
-              \"content\": \"${DEPLOYMENT_HOST}\",
-              \"ttl\": 1,
-              \"proxied\": true
-            }" | jq '.'
+          if [ -z "$CONTRIBUTORS" ] || [ "$CONTRIBUTORS" = "null" ]; then
+            CONTRIBUTORS='[]'
+          fi
 
-          echo "Created DNS record for ${SUBDOMAIN}.wevibing.ai pointing to ${DEPLOYMENT_HOST}"
+          # Update versions.json
+          jq --arg version "$NEW_VERSION" \
+             --arg mergedAt "$MERGED_AT" \
+             --arg prNumber "$PR_NUMBER" \
+             --arg deployUrl "$DEPLOY_URL" \
+             --arg pagesDeploymentUrl "$DEPLOYMENT_URL" \
+             --arg commitSha "$COMMIT_SHA" \
+             --argjson contributors "$CONTRIBUTORS" \
+             '.currentVersion = ($version | tonumber) |
+              .versions += [{
+                version: ($version | tonumber),
+                mergedAt: $mergedAt,
+                prNumber: ($prNumber | tonumber),
+                deployUrl: $deployUrl,
+                pagesDeploymentUrl: $pagesDeploymentUrl,
+                commitSha: $commitSha,
+                contributors: $contributors
+              }]' versions.json > versions.json.tmp
+
+          mv versions.json.tmp versions.json
 
       - name: Commit updated versions.json
         run: |
