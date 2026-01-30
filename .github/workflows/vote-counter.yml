@@ -125,7 +125,7 @@ jobs:
         if: steps.count-verified.outputs.verified_count >= 1
         uses: actions/github-script@v7
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+          github-token: ${{ secrets.PAT_TOKEN }}
           script: |
             await github.rest.pulls.merge({
               owner: context.repo.owner,
