@@ -9,6 +9,9 @@ jobs:
   update-version:
     runs-on: ubuntu-latest
     name: Update version and create Cloudflare subdomain
+    permissions:
+      contents: write
+      pull-requests: read
 
     # Only run if this isn't a version tracking commit (prevent loops)
     if: "!contains(github.event.head_commit.message, '[version-tracker]')"
