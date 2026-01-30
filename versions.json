@@ -17,7 +17,18 @@
       "contributors": [
         "AlexanderZaytsev"
       ]
+    },
+    {
+      "version": 3,
+      "mergedAt": "2026-01-30T17:58:54Z",
+      "prNumber": 8,
+      "deployUrl": "https://v3.wevibing.ai",
+      "pagesDeploymentUrl": "https://c1042cbe.wevibing-ai.pages.dev",
+      "commitSha": "6496650f381178ce15f7e7f3e41cf935b9b4427c",
+      "contributors": [
+        "AlexanderZaytsev"
+      ]
     }
   ],
-  "currentVersion": 2
+  "currentVersion": 3
 }
